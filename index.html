@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#173b4f">
+    <meta name="description" content="План меню, закупок и готовки для выезда с пятницы по воскресенье.">
+    <title>Меню и закупки · Тимбилдинг</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#top" aria-label="На главную">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span>Полевой стол</span>
+        </a>
+        <div class="header-actions">
+          <button class="button button-quiet" id="export-json" type="button">Скачать резервную копию</button>
+          <label class="button button-quiet file-button" for="import-json">Загрузить данные</label>
+          <input id="import-json" type="file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </header>
+
+    <main id="top" class="page-shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Выезд · пятница — воскресенье</p>
+          <h1>Меню, закупки<br>и готовка — в одном месте</h1>
+          <p class="hero-text">План для 6 взрослых и 3 детей. Меняйте блюда и продукты, распределяйте обязанности и забирайте готовый список в магазин.</p>
+          <div class="hero-cta"><a class="button button-download" href="plan-zakupok.xlsx" download>Скачать итоговый план Excel <span aria-hidden="true">↓</span></a></div>
+        </div>
+        <div class="hero-stats" aria-label="Сводка выезда">
+          <div class="stat"><span class="stat-value" id="stat-people">9</span><span class="stat-label">участников</span></div>
+          <div class="stat"><span class="stat-value" id="stat-meals">6</span><span class="stat-label">приёмов пищи</span></div>
+          <div class="stat"><span class="stat-value" id="stat-items">0</span><span class="stat-label">позиций в закупке</span></div>
+        </div>
+      </section>
+
+      <section class="settings-card card" aria-labelledby="settings-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Настройки группы</p><h2 id="settings-title">Кто едет</h2></div>
+          <p class="small-note">Количество детей пересчитывается по выбранной доле взрослой порции.</p>
+        </div>
+        <div class="settings-grid">
+          <label class="field"><span>Взрослые</span><input id="adults-count" type="number" min="1" max="20" step="1"></label>
+          <label class="field"><span>Дети</span><input id="children-count" type="number" min="0" max="30" step="1"></label>
+          <label class="field"><span>Детская порция</span><div class="input-suffix"><input id="child-factor" type="number" min="0" max="1.5" step="0.05"><span>доли взрослой</span></div></label>
+          <div class="portion-summary"><span>Расчётный объём</span><strong id="serving-equivalent">7,8 порции</strong></div>
+        </div>
+        <div class="people-editor"><div class="people-title"><strong>Имена взрослых</strong><span>Назначения обновятся автоматически</span></div><div id="adult-names" class="name-fields"></div></div>
+      </section>
+
+      <nav class="view-tabs" aria-label="Разделы плана">
+        <button class="tab-button active" data-tab="plan" type="button">Меню и готовка</button>
+        <button class="tab-button" data-tab="shopping" type="button">Подробные закупки <span id="tab-open-count" class="tab-count">0</span></button>
+        <button class="tab-button" data-tab="totals" type="button">Итого к покупке</button>
+      </nav>
+
+      <section id="view-plan" class="tab-view">
+        <div class="section-heading">
+          <div><p class="eyebrow">Шесть общих трапез</p><h2>План меню</h2></div>
+          <p class="small-note">Каждый взрослый ведёт одну готовку и помогает на другой.</p>
+        </div>
+        <div id="meal-grid" class="meal-grid"></div>
+      </section>
+
+      <section id="view-shopping" class="tab-view" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow">Из чего складывается свод</p><h2>Подробные закупки</h2></div>
+          <button class="button button-primary" id="add-item" type="button">＋ Добавить продукт</button>
+        </div>
+        <div class="toolbar card">
+          <label class="filter-field"><span>Показать</span><select id="meal-filter"><option value="all">Все приёмы пищи</option></select></label>
+          <label class="check-filter"><input id="show-open-only" type="checkbox"><span>Только не куплено</span></label>
+          <span class="toolbar-spacer"></span>
+          <button class="button button-quiet" id="export-detail" type="button">Скачать подробный список CSV</button>
+        </div>
+        <div class="table-wrap card">
+          <table class="shopping-table">
+            <thead><tr><th scope="col">Приём пищи</th><th scope="col">Продукт / напиток</th><th scope="col">На 1 взрослую порцию</th><th scope="col">Всего купить</th><th scope="col">Кто покупает</th><th scope="col">Куплено</th><th scope="col"><span class="sr-only">Удалить</span></th></tr></thead>
+            <tbody id="shopping-rows"></tbody>
+          </table>
+          <div id="empty-shopping" class="empty-state" hidden>В этом фильтре пока нет позиций.</div>
+        </div>
+      </section>
+
+      <section id="view-totals" class="tab-view" hidden>
+        <div class="section-heading">
+          <div><p class="eyebrow">Без разбивки по дням и блюдам</p><h2>Итого к покупке</h2></div>
+          <button class="button button-primary" id="export-summary" type="button">Скачать список для магазина</button>
+        </div>
+        <div class="totals-toolbar card">
+          <div><strong id="totals-count">0 продуктов</strong><span>Одинаковые названия и единицы объединены</span></div>
+          <div class="progress-block"><span id="bought-summary">Куплено 0 из 0 позиций</span><div class="progress-track"><span id="progress-fill"></span></div></div>
+        </div>
+        <div id="totals-grid" class="totals-grid"></div>
+        <p class="footnote">Количество ориентировочное. Перед покупкой округлите его вверх под размер упаковок в магазине.</p>
+      </section>
+
+      <footer class="site-footer"><span>Данные сохраняются в этом браузере на этом устройстве.</span><button class="text-button" id="reset-plan" type="button">Вернуть исходный план</button></footer>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
